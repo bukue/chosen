@@ -49,6 +49,9 @@ class @Chosen extends AbstractChosen
     @form_field.fire("chosen:ready", {chosen: this})
 
   register_observers: ->
+    @container.observe "touchstart", (evt) => this.container_mousedown(evt)
+    @container.observe "touchend", (evt) => this.container_mouseup(evt)
+
     @container.observe "mousedown", (evt) => this.container_mousedown(evt)
     @container.observe "mouseup", (evt) => this.container_mouseup(evt)
     @container.observe "mouseenter", (evt) => this.mouse_enter(evt)
@@ -73,6 +76,8 @@ class @Chosen extends AbstractChosen
     @search_field.observe "keyup", (evt) => this.keyup_checker(evt)
     @search_field.observe "keydown", (evt) => this.keydown_checker(evt)
     @search_field.observe "focus", (evt) => this.input_focus(evt)
+    @search_field.observe "cut", (evt) => this.clipboard_event_checker(evt)
+    @search_field.observe "paste", (evt) => this.clipboard_event_checker(evt)
 
     if @is_multiple
       @search_choices.observe "click", (evt) => this.choices_click(evt)
@@ -219,14 +224,13 @@ class @Chosen extends AbstractChosen
       return false
 
     @container.addClassName "chosen-with-drop"
-    @form_field.fire("chosen:showing_dropdown", {chosen: this})
-
     @results_showing = true
 
     @search_field.focus()
     @search_field.value = @search_field.value
 
     this.winnow_results()
+    @form_field.fire("chosen:showing_dropdown", {chosen: this})
 
   update_results_content: (content) ->
     @search_results.update content
@@ -400,6 +404,7 @@ class @Chosen extends AbstractChosen
 
   no_results: (terms) ->
     @search_results.insert @no_results_temp.evaluate( terms: terms )
+    @form_field.fire("chosen:no_results", {chosen: this})
 
   no_results_clear: ->
     nr = null
@@ -460,7 +465,7 @@ class @Chosen extends AbstractChosen
         @mouse_on_container = false
         break
       when 13
-        evt.preventDefault()
+        evt.preventDefault() if this.results_showing
         break
       when 38
         evt.preventDefault()
